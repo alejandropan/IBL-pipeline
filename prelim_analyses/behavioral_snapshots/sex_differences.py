@@ -66,3 +66,50 @@ for lab in users:
             allsubjects.loc[allsubjects['subject_nickname'] == mouse, ['training_status']] = training_status
         except:
             pass
+        
+#Star plotting
+#Make sublist with labs that have trained males and female
+#TODO dectect this condition automatically
+allsubjects['sex of the experimenter'] = "F"
+allsubjects.loc[((allsubjects['lab_name']== 'wittenlab')|(allsubjects['lab_name']=='angelakilab') | (allsubjects['lab_name']=='danlab')), ['sex of the experimenter']] = "M"
+subjects_mixed = allsubjects.loc[((allsubjects['lab_name']== 'churchlandlab')|(allsubjects['lab_name']=='angelakilab') | (allsubjects['lab_name']=='cortexlab'))]
+
+
+##Plots per session
+#Total - day
+sns.set()
+total_day = plt.figure(figsize=(10,6))
+sns.boxplot(x="sex", y="days_to_trained", data=allsubjects )
+sns.swarmplot(x="sex", y="days_to_trained", data=allsubjects,hue="lab_name", edgecolor="white")
+
+#Per Lab - day
+lab_day = plt.figure(figsize=(10,6))
+sns.boxplot(x="lab_name", y="days_to_trained", hue="sex",
+            data=allsubjects)
+
+#Interaction - day
+interaction_day = plt.figure(figsize=(10,6))
+sns.catplot(x="sex", y="days_to_trained",col='sex of the experimenter', data=subjects_mixed, kind="box")
+
+##Plots per trial
+#Total - trial
+total_trial = plt.figure(figsize=(10,6))
+sns.boxplot(x="sex", y="trials_to_trained", data=allsubjects )
+sns.swarmplot(x="sex", y="trials_to_trained", data=allsubjects,hue="lab_name", edgecolor="white")
+
+#Per Lab - day
+lab_trial = plt.figure(figsize=(10,6))
+sns.boxplot(x="lab_name", y="trials_to_trained", hue="sex",
+            data=allsubjects)
+
+#Interaction - day
+interaction_trial = plt.figure(figsize=(10,6))
+interaction_trial = sns.catplot(x="sex", y="trials_to_trained",col='sex of the experimenter', data=subjects_mixed, kind="box")
+
+##Save figs
+total_day.savefig("total_day.pdf", bbox_inches='tight')
+lab_day.savefig("lab_day.pdf", bbox_inches='tight')
+interaction_day.savefig("interaction_day.pdf", bbox_inches='tight')
+total_trial.savefig("total_triL.pdf", bbox_inches='tight')
+lab_trial.savefig("lab_trial.pdf", bbox_inches='tight')
+interaction_trial.savefig("interaction_trial.pdf")

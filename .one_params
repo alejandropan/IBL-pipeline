@@ -1,0 +1,13 @@
+{
+    "ALYX_LOGIN": "alejandro",
+    "ALYX_PWD": "WHXGtF6o",
+    "ALYX_URL": "https://alyx.internationalbrainlab.org",
+    "CACHE_DIR": "/home/ibladmin/Downloads/FlatIron",
+    "FTP_DATA_SERVER": "ftp://ibl.flatironinstitute.org",
+    "FTP_DATA_SERVER_LOGIN": "iblftp",
+    "FTP_DATA_SERVER_PWD": "GrayMatter19",
+    "HTTP_DATA_SERVER": "http://ibl.flatironinstitute.org",
+    "HTTP_DATA_SERVER_LOGIN": "iblmember",
+    "HTTP_DATA_SERVER_PWD": "GrayMatter19",
+    "GLOBUS_CLIENT_ID": null
+}

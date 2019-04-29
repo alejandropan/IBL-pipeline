@@ -13,7 +13,8 @@ from datetime import datetime
 for ilab in reference.Lab:
     ingested_sessions = acquisition.Session & 'task_protocol!="NULL"' \
         & behavior.TrialSet
-    subjects = ((subject.Subject & ilab) - subject.Death) & 'sex != "U"' & \
+    subjects = ((subject.Subject*subject.SubjectLab & ilab) - subject.Death) \
+        & 'sex != "U"' & \
         action.Weighing & action.WaterAdministration & ingested_sessions
 
     if not len(subjects):
@@ -21,11 +22,12 @@ for ilab in reference.Lab:
 
     last_sessions = subjects.aggr(
         ingested_sessions,
-        session_start_time='max(session_start_time)') \
+        'subject_nickname', session_start_time='max(session_start_time)') \
         * acquisition.Session \
         * behavior_analyses.SessionTrainingStatus
     summary = last_sessions.proj(
-        'task_protocol', 'training_status').fetch(as_dict=True)
+        'subject_nickname', 'task_protocol', 'training_status').fetch(
+            as_dict=True)
 
     task_protocols = last_sessions.fetch('task_protocol')
     protocols = [protocol.partition('ChoiceWorld')[0]
@@ -42,14 +44,16 @@ for ilab in reference.Lab:
             'task_protocol LIKE "{}%"'.format(protocol))
 
     summary = pd.DataFrame(summary)
-    summary.pop('lab_name')
+    summary.sort_values('subject_nickname', inplace=True, ascending=True)
+    summary.pop('subject_uuid')
     summary.index += 1
     cols = summary.columns.tolist()
     cols = cols[-1:] + cols[:-1]
     summary = summary[cols]
     last_session_date = \
-        np.max(summary['lastest_session_start_time']).date().strftime('%Y-%m-%d')
+        np.max(summary['lastest_session_start_time']).date().strftime(
+            '%Y-%m-%d')
     summary.to_csv(
         '/src/IBL-pipeline/snapshots/{}_{}_summary.csv'.format(
-            last_session_date, ilab['lab_name']))
+            last_session_date, ilab['lab_name']), index=False)
     print('Saved {} current training status summary.'.format(ilab['lab_name']))

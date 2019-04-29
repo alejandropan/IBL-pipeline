@@ -36,9 +36,11 @@ datapath = '/Data_shortcut/'
 
 # all mice that are alive, without those with undefined sex (i.e. example mice)
 # restrict to animals that have trial data, weights and water logged
-allsubjects = pd.DataFrame.from_dict(((subject.Subject - subject.Death) & 'sex!="U"'
-                                   & action.Weighing() & action.WaterAdministration()
-                                   ).fetch(as_dict=True, order_by=['lab_name', 'subject_nickname']))
+allsubjects = pd.DataFrame.from_dict(
+    ((subject.Subject - subject.Death) * subject.SubjectLab & 'sex!="U"' &
+     action.Weighing & action.WaterAdministration).fetch(
+         as_dict=True, order_by=['lab_name', 'subject_nickname']))
+
 if allsubjects.empty:
     raise ValueError('DataJoint seems to be down, please try again later')
 
@@ -48,9 +50,7 @@ print(users)
 for lidx, lab in enumerate(users):
 
     # take mice from this lab only
-    subjects = pd.DataFrame.from_dict((((subject.Subject - subject.Death) & 'sex!="U"' & 'lab_name="%s"'%lab)
-                                   & action.Weighing() & action.WaterAdministration()
-                                   ).fetch(as_dict=True, order_by=['subject_nickname']))
+    subjects = allsubjects[allsubjects['lab_name'].str.contains(lab)].reset_index()
 
     for i, mouse in enumerate(subjects['subject_nickname']):
 
@@ -68,9 +68,8 @@ for lidx, lab in enumerate(users):
                                  figsize=(13.69, 8.27))
         sns.set_palette("colorblind")  # palette for water types
 
-        fig.suptitle('Mouse %s (%s), born %s, user %s (%s), %s' %(subjects['subject_nickname'][i],
-         subjects['sex'][i], subjects['subject_birth_date'][i],
-         subjects['responsible_user'][i], subjects['lab_name'][i],
+        fig.suptitle('Mouse %s (%s), born %s, %s, %s' %(subjects['subject_nickname'][i],
+         subjects['sex'][i], subjects['subject_birth_date'][i], subjects['lab_name'][i],
          subjects['subject_description'][i]))
 
         # ============================================= #
@@ -81,11 +80,10 @@ for lidx, lab in enumerate(users):
         xlims = [weight_water.date.min()-timedelta(days=2), weight_water.date.max()+timedelta(days=2)]
         plot_water_weight_curve(weight_water, baseline, axes[0,0], xlims)
 
-        behav = get_behavior(mouse, lab)
-        if behav.empty:
-            continue
-
+        # ============================================= #
         # check whether the subject is trained based the the lastest session
+        # ============================================= #
+
         subj = subject.Subject & 'subject_nickname="{}"'.format(mouse)
         last_session = subj.aggr(
             behavior.TrialSet, session_start_time='max(session_start_time)')
@@ -115,69 +113,64 @@ for lidx, lab in enumerate(users):
         # TRIAL COUNTS AND SESSION DURATION
         # ============================================= #
 
-        plot_trialcounts_sessionlength(behav, axes[1, 0], xlims)
+        plot_trialcounts_sessionlength(mouse, lab, axes[1, 0], xlims)
         if training_status == 'trained':
             # indicate date at which the animal is 'trained'
             axes[1, 0].axvline(trained_date, color="orange")
         elif training_status == 'ready for ephys':
             # indicate date at which the animal is 'ready for ephys'
+            axes[1, 0].axvline(trained_date, color="orange")
             axes[1, 0].axvline(biased_date, color="forestgreen")
 
         # ============================================= #
         # PERFORMANCE AND MEDIAN RT
-        # ============================================= #
+        # ==== ========================================= #
 
-        plot_performance_rt(behav, axes[2, 0], xlims)
+        plot_performance_rt(mouse, lab, axes[2, 0], xlims)
         if training_status == 'trained':
             # indicate date at which the animal is 'trained'
             axes[2, 0].axvline(trained_date, color="orange")
         elif training_status == 'ready for ephys':
             # indicate date at which the animal is 'ready for ephys'
+            axes[2, 0].axvline(trained_date, color="orange")
             axes[2, 0].axvline(biased_date, color="forestgreen")
 
         # ============================================= #
         # CONTRAST/CHOICE HEATMAP
         # ============================================= #
 
-        plot_contrast_heatmap(behav, axes[3,0], xlims)
+        plot_contrast_heatmap(mouse, lab, axes[3,0], xlims)
 
         # ============================================= #
         # PSYCHOMETRIC FUNCTION FITS OVER TIME
         # ============================================= #
 
-        # fit psychfunc on choice fraction, rather than identity
-        pars = behav.groupby(['date', 'probabilityLeft_block']).apply(fit_psychfunc).reset_index()
-
-        # pars = (behavior_analysis.ComputationForDate.PsychResults &
-        #            'subject_nickname="%s"'%mouse & 'lab_name="%s"'%lab).fetch(as_dict=True,
-        #            order_by='session_start_time')
-        # shell()
-
-        # or how about we chat tomorrow morning? the fetch seems straightforward, perhaps we can go through the following together
-        # - in the output, can I round the session_start_time to a date (remove the hours and minutes)?
-        # - can I get these values but on appended data per day (rather than each sessions, i.e. when there are two sessions per day group them together)
-        # - within each session of biasedChoiceWorld, can we separately have all the psychfunc parameters for each value of probabilityLeft
+        # grab values from precomputed 
+        pars = pd.DataFrame((behavior_analysis.BehavioralSummaryByDate.PsychResults * subject.Subject * subject.SubjectLab &
+                   'subject_nickname="%s"'%mouse & 'lab_name="%s"'%lab).fetch(as_dict=True))
 
         # link to their descriptions
         ylabels = {'threshold': r'Threshold $(\sigma)$', 'bias': r'Bias $(\mu)$',
-            'lapselow': r'Lapse low $(\gamma)$', 'lapsehigh': r'Lapse high $(\lambda)$'}
+            'lapse_low': r'Lapse low $(\gamma)$', 'lapse_high': r'Lapse high $(\lambda)$'}
         ylims = [[-5, 105], [-105, 105], [-0.05, 1.05], [-0.05, 1.05]]
         yticks = [[0, 19, 100], [-100, -16, 0, 16, 100], [-0, 0.2, 0.5, 1], [-0, 0.2, 0.5, 1]]
 
         # pick a good-looking diverging colormap with black in the middle
-        cmap = sns.diverging_palette(20, 220, n=len(behav['probabilityLeft_block'].unique()), center="dark")
-        if len(behav['probabilityLeft_block'].unique()) == 1:
+        cmap = sns.diverging_palette(20, 220, n=len(pars['prob_left_block'].unique()), center="dark")
+        if len(pars['prob_left_block'].unique()) == 1:
             cmap = "gist_gray"
         sns.set_palette(cmap)
 
         # plot the fitted parameters
         for pidx, (var, labelname) in enumerate(ylabels.items()):
             ax = axes[pidx,1]
-            sns.lineplot(x="date", y=var, marker='o', hue="probabilityLeft_block", linestyle='', lw=0,
+
+            sns.lineplot(x="session_date", y=var, marker='o', hue="prob_left_block", 
+                hue_order=[1, 0, 2], linestyle='', lw=0,
                 palette=cmap, data=pars, legend=None, ax=ax)
             ax.set(xlabel='', ylabel=labelname, ylim=ylims[pidx],
                 yticks=yticks[pidx],
-                xlim=[behav.date.min()-timedelta(days=1), behav.date.max()+timedelta(days=1)])
+                xlim=[pars.session_date.min()-timedelta(days=1), pars.session_date.max()+timedelta(days=1)])
 
             fix_date_axis(ax)
             if pidx == 0:
@@ -188,11 +181,16 @@ for lidx, lab in enumerate(users):
                 ax.axvline(trained_date, color="orange")
             elif training_status == 'ready for ephys':
                 # indicate date at which the animal is 'ready for ephys'
+                ax.axvline(trained_date, color="orange")
                 ax.axvline(biased_date, color="forestgreen")
 
         # ============================================= #
         # LAST THREE SESSIONS
         # ============================================= #
+
+        behav = get_behavior(mouse, lab)
+        if behav.empty:
+            continue
 
         didx = 1
         sorteddays = behav['days'].sort_values(ascending=True).unique()

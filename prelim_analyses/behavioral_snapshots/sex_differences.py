@@ -25,6 +25,9 @@ from load_mouse_data_datajoint import *  # this has all plotting functions
 #Collect all alyx data
 allsubjects = pd.DataFrame.from_dict(((subject.Subject() - subject.Death()) & 'sex!="U"').fetch(as_dict=True, order_by=['lab_name', 'subject_nickname']))
 #allsubjects = pd.DataFrame.from_dict((subject.Subject() & 'sex!="U"' & 'subject_birth_date>"2018-10-15"' ).fetch(as_dict=True, order_by=['lab_name', 'subject_nickname']))
+allsubjects = pd.DataFrame.from_dict((subject.Subject() & 'sex!="U"' & 'subject_birth_date>"2018-10-15"' ).fetch(as_dict=True, order_by=['lab_name', 'subject_nickname']))
+
+
 if allsubjects.empty:
     raise ValueError('DataJoint seems to be down, please try again later')
 #Drop double entries

@@ -1,10 +1,12 @@
 # @alejandropan 2019
 
 #Import some general packages
+#Notes: Currently psychometric plot is taking into account ibl_witten_01 which is a bad dataset
 import matplotlib.pyplot as plt
 
 import numpy as np
 import pandas as pd
+from scipy import stats
 
 ## CONNECT TO datajoint
 
@@ -21,14 +23,16 @@ from alex_psy import *
 ###Local
 #TODO add restriction for untrainable #2,793,497 trials #89,442 from witten trained
 key = ((subject.Subject()) * (behavior.TrialSet() & 'n_trials > 100') * (subject.SubjectLab() & 'lab_name="wittenlab"') * (behavior_analysis.SessionTrainingStatus() & 'training_status="trained"  ')).fetch('KEY')
+trials_princeton = pd.DataFrame.from_dict((behavior.TrialSet.Trial & key).fetch(as_dict=True))
 
-trials  = pd.DataFrame.from_dict(behavior.TrialSet.Trial & key)
 
-t_info = trials.proj('trial_response_choice', signed_contrast='trial_stim_contrast_right - trial_stim_contrast_left')
-q = dj.U('signed_contrast').aggr(t_info, n='count(*)', n_right='sum(trial_response_choice="CCW")')
-result = q.proj('n', 'n_right', 'signed_contrast', prop_right='n_right / n')
 
-right_trials, total_trials, prop_right_trials, signed_contrasts = result.fetch('n_right', 'n', 'prop_right', 'signed_contrast')
+
+#t_info = trials.proj('trial_response_choice', signed_contrast='trial_stim_contrast_right - trial_stim_contrast_left')
+#q = dj.U('signed_contrast').aggr(t_info, n='count(*)', n_right='sum(trial_response_choice="CCW")')
+#result = q.proj('n', 'n_right', 'signed_contrast', prop_right='n_right / n')
+
+#right_trials, total_trials, prop_right_trials, signed_contrasts = result.fetch('n_right', 'n', 'prop_right', 'signed_contrast')
 
 #fig, ax = plt.subplots(1, 1, dpi=150)
 #ax.plot(signed_contrasts * 100, prop_right_trials)
@@ -72,7 +76,7 @@ y = psy.erf_psycho_2gammas(pars, x)
 
 ##IBLWide
 key = ((subject.Subject()) * (behavior.TrialSet() & 'n_trials > 100') * (subject.SubjectLab()) * (behavior_analysis.SessionTrainingStatus() & 'training_status="trained"  ')).fetch('KEY')
-
+trials_ibl = pd.DataFrame.from_dict((behavior.TrialSet.Trial & key).fetch(as_dict=True))
 choice, cont_left, cont_right = (behavior.TrialSet.Trial & key).fetch('trial_response_choice', 
                                                                       'trial_stim_contrast_left', 
                                                                       'trial_stim_contrast_right')
@@ -107,18 +111,54 @@ psy_df = psy_by_mouse (unique_signed_contrasts,'wittenlab')
 #Plotting
 
 psy_com, (ax1, ax2) = plt.subplots(1, 2, sharey=True)
-ax1.plot(x, y)
+sns.pointplot(data= psy_df_local, ax = ax1)
 ax1.set_title('Princeton')
-ax1.set_xlabel('Signed Contrast (%)')
+ax1.set_xlabel('Signed Contrast (Fraction)')
 ax1.set_ylabel('P(right choice)')
-sns.pointplot(data = psy_df_local, ax = ax1)
-ax2.plot(x2, y2)
 ax2.set_title('IBL')
-ax2.set_xlabel('Signed Contrast (%)')
+ax2.set_xlabel('Signed Contrast (Fraction)')
 sns.pointplot(data = psy_df, ax = ax2)
 plt.savefig("psy_com.svg", format="svg")
 
+#psychometric fit with two lapse rates
+psy_com, (ax1, ax2) = plt.subplots(1, 2, sharey=True)
+plt.setp(ax1, xticks=unique_signed_contrasts, yticks = np.arange(min(x), max(x)+1, 0.1), )
+plt.setp(ax2, xticks=unique_signed_contrasts)
+ax1.plot(x/100,y, color='m') 
+ax1.set_title('Princeton')
+ax1.set_xlabel('Signed Contrast (Fraction)')
+ax1.set_ylabel('P(right choice)')
+ax2.set_title('IBL')
+ax2.set_xlabel('Signed Contrast (Fraction)')
+ax2.plot(x2/100,y2,color='m') 
+plt.savefig("psy_com_fit.svg", format="svg")
+
+
+#Zoomed version
+psy_com, (ax1, ax2) = plt.subplots(1, 2, sharey=True)
+plt.setp(ax1, xticks=unique_signed_contrasts, yticks = np.arange(min(x), max(x)+1, 0.1),\
+         xlim=[-0.25, 0.25])
+plt.setp(ax2, xticks=unique_signed_contrasts, xlim= [-0.25, 0.25])
+ax1.plot(x/100,y, color='m') 
+ax1.set_title('Princeton')
+ax1.set_xlabel('Signed Contrast (Fraction)')
+ax1.set_ylabel('P(right choice)')
+ax2.set_title('IBL')
+ax2.set_xlabel('Signed Contrast (Fraction)')
+ax2.plot(x2/100,y2,color='m') 
+plt.savefig("psy_com_fit_zoom.svg", format="svg")
+
 #Stats on average number of trials  per session, bar plot IBL vs our lab
+princeton_ses = trials_princeton.groupby(['session_start_time']).count()['trial_id']
+ibl_ses = trials_ibl.groupby(['session_start_time']).count()['trial_id']
+trial_ses_com, ax = plt.subplots()
+sns.kdeplot(princeton_ses, shade=True, ax=ax, legend= False);
+sns.kdeplot(ibl_ses, shade=True, ax=ax, legend= False);
+ax.set_xlabel('Trials per session')
+ax.set_ylabel('Probability Density')
+ax.legend(('Princeton','IBL'))
+plt.savefig("trial_ses_com.svg", format="svg")
+
 
 #Count trial number over same days
 #Make extra df for witten  (trials df) 

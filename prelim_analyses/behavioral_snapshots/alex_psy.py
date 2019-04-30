@@ -13,7 +13,7 @@ def psy_by_mouse_local (unique_signed_contrasts,labname):
             * (subject.SubjectLab() & 'lab_name="{}"'.format(labname)) 
             * (behavior_analysis.SessionTrainingStatus() & 'training_status="trained"  '))     
         
-        psy_df = pd.DataFrame(columns = [unique_signed_contrasts])
+        psy_df = pd.DataFrame(columns = unique_signed_contrasts)
         
         for row , mouse in enumerate(mice.subject_nickname.unique()):
             
@@ -48,7 +48,7 @@ def psy_by_mouse (unique_signed_contrasts):
             * (subject.SubjectLab()) 
             * (behavior_analysis.SessionTrainingStatus() & 'training_status="trained"  '))     
         
-      psy_df = pd.DataFrame(columns = [unique_signed_contrasts])
+      psy_df = pd.DataFrame(columns = unique_signed_contrasts)
       
       for row , mouse in enumerate(mice.subject_nickname.unique()):
             

@@ -5,6 +5,14 @@ Created on Tue Apr 30 01:11:57 2019
 
 @author: Alejandro
 """
+import numpy as np
+import pandas as pd
+import datajoint as dj
+dj.config['database.host'] = 'datajoint.internationalbrainlab.org'
+from ibl_pipeline.analyses import behavior as behavior_analysis
+from ibl_pipeline import reference, subject, action, acquisition, data, behavior
+import seaborn as sns
+
 
 def psy_by_mouse_local (unique_signed_contrasts,labname):
         

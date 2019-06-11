@@ -22,8 +22,8 @@ from load_mouse_data_datajoint import *  # this has all plotting functions
 
 
 
-key = ((subject.Subject()) * (behavior.TrialSet() & 'n_trials > 100') * (subject.SubjectLab()) * (behavior_analysis.SessionTrainingStatus() & 'training_status="ready for ephys"  ')).fetch('KEY')
-trials_ibl = pd.DataFrame.from_dict((behavior.TrialSet.Trial & key).fetch(as_dict=True))
+key = ((subject.Subject()  & 'sex!="U"') * (behavior.TrialSet() & 'n_trials > 100') * (subject.SubjectLab()) * (behavior_analysis.SessionTrainingStatus() & 'training_status="ready for ephys"  ')).fetch('KEY')
+trials_ibl = pd.DataFrame.from_dict((subject.Subject() * behavior.TrialSet.Trial & key).fetch(as_dict=True))
 
 trials_ibl['signed_contrasts'] = trials_ibl['trial_stim_contrast_right'] - trials_ibl['trial_stim_contrast_left']
 
@@ -37,5 +37,7 @@ trials_ibl = trials_ibl.rename(index=str, columns={"session_start_time": "ses",
 trials_ibl.loc[(trials_ibl['choice']=='CW'),'choice'] = -1
 trials_ibl.loc[(trials_ibl['choice']=='CCW'), 'choice'] = 1
 trials_ibl.loc[(trials_ibl['choice']=='No Go'), 'choice'] = 0
+
+#Remove 0.5 block?
 
 psy_df =  trials_ibl

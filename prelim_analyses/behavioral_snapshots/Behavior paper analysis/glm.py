@@ -18,7 +18,7 @@ U(Right_Choice = False, Correct_choice = False, Reward = False) = 0 /
 U(Right_Choice = False, Correct_choice = True, Reward = False) =  0 /
 
 
-TODO:  invert choice vector so that negative value correspond to negative contrast in correct trials?
+TODO:  automatically invert choice vector so that negative value correspond to negative contrast in correct trials?
 
 @author: ibladmin
 
@@ -182,7 +182,7 @@ def load_regression (data, mixed_effects  = False):
 
 
 """
-TODO nmiced effects GLM
+TODO mixed effects GLM
 
      X_train = X_train.drop(columns = 'mouse_name')
     X_test = X_test.drop(columns = 'mouse_name')

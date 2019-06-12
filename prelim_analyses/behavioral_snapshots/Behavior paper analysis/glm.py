@@ -168,7 +168,6 @@ def load_regression (data, mixed_effects  = False):
         logreg1 = LogisticRegression()
         r2  = cross_val_score(logreg1, exog, endog, cv=10)
         print( 'Accuracy  = ' , r2.mean())
-        print(end - start)
 
        
     #cross validate  with sklearn 

@@ -17,7 +17,7 @@ from ibl_pipeline import reference, subject, behavior
 from load_mouse_data_datajoint import *  # this has all plotting functions
 import seaborn as sns
 from glm import *
-
+from basic_plots import *
 
 
 
@@ -42,14 +42,12 @@ trials_ibl.loc[(trials_ibl['choice']=='No Go'), 'choice'] = 0
 
 psy_df =  trials_ibl.loc[(trials_ibl['trial_stim_prob_left'] == 0.8) | (trials_ibl['trial_stim_prob_left'] == 0.2)]
 
-mresult, fresult, mr2, fr2  = glm_logit(psy_df)
+mresult, fresult, result, mr2, fr2,r2  = glm_logit(psy_df)
 
 mresults  =  pd.DataFrame({"Predictors": mresult.model.exog_names , "Coef" : mresult.params.values,\
                           "SEM": mresult.bse.values, "Sex": "M"})
-mresults = mresults.reindex(mresults.Coef.abs().sort_values(ascending=False).index)
 fresults  =  pd.DataFrame({"Predictors": fresult.model.exog_names , "Coef" : fresult.params.values,\
                           "SEM": mresult.bse.values, "Sex": "F"}).reindex(mresults.Coef.abs().sort_values().index)
-fresults = fresults.reindex(fresults.Coef.abs().sort_values(ascending=False).index)
 results  = pd.concat([mresults, fresults]) 
 
 
@@ -62,3 +60,5 @@ ax.axhline(y=0, linestyle='--', color='black', linewidth=2)
 fig.suptitle ('GLM Biased Blocks')
 fig.savefig("glm_sex_diff.pdf")
 
+#Plotting pooler results
+plot_glm(psy_df, result, r2)

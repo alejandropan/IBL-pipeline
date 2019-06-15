@@ -18,7 +18,7 @@ U(Right_Choice = False, Correct_choice = False, Reward = False) = 0 /
 U(Right_Choice = False, Correct_choice = True, Reward = False) =  0 /
 
 
-TODO:  automatically invert choice vector so that negative value correspond to negative contrast in correct trials?
+TODO:  invert choice vector so that negative value correspond to negative contrast in correct trials?
 
 @author: ibladmin
 
@@ -38,7 +38,7 @@ from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import KFold
 
  
-def  glm_logit(psy_df):
+def  glm_logit(psy_df, sex_diff = True):
 
    ##calculate useful variables
     
@@ -120,11 +120,18 @@ def  glm_logit(psy_df):
     ## construct our model, with contrast as a variable
     
     ##Bayeasian mixed effects #need to change ident and exog_VC to account for mixed effects
-    result, r2  =  load_regression(data)
-    mresult, mr2 = load_regression(mdata)
-    fresult, fr2 = load_regression(fdata)
+    if sex_diff==True:
+        mresult, mr2 = load_regression(mdata)
+        fresult, fr2 = load_regression(fdata)
+        result, r2  =  load_regression(data)
+        return mresult, fresult, result, mr2, fr2, r2
     
-    return mresult, fresult, mr2, fr2
+    
+    else:  
+        result, r2  =  load_regression(data)
+        return result,  r2
+    
+    
 
 def load_regression (data, mixed_effects  = False):
     
@@ -136,9 +143,9 @@ def load_regression (data, mixed_effects  = False):
                   'uchoice4', 'Levidence4', 'Revidence4', 'rchoice5', 'uchoice5',\
                   'Levidence5', 'Revidence5']]
     
-    cols = list(exog.columns)
+    #cols = list(exog.columns)
     
-    #Normalising predictors
+    #Normalising contrast
     for col in cols:
         col_zscore = col + '_zscore'
         exog[col_zscore] = (exog[col] - exog[col].mean())/exog[col].std(ddof=0)
@@ -182,7 +189,7 @@ def load_regression (data, mixed_effects  = False):
 
 
 """
-TODO mixed effects GLM
+TODO nmiced effects GLM
 
      X_train = X_train.drop(columns = 'mouse_name')
     X_test = X_test.drop(columns = 'mouse_name')

@@ -162,7 +162,7 @@ def load_regression (data, mixed_effects  = False):
     
     if mixed_effects == False :
 
-    ##Frequentist wihtout mixed effects
+    ##Logistic GLM wihtout mixed effects
         X_train, X_test, y_train, y_test = train_test_split(exog, np.ravel(endog), test_size=0.3)
         logit_model = sm.Logit(y_train,X_train)
         result=logit_model.fit()
@@ -189,7 +189,7 @@ def load_regression (data, mixed_effects  = False):
 
 
 """
-TODO nmiced effects GLM
+TODO mixed effects GLM
 
      X_train = X_train.drop(columns = 'mouse_name')
     X_test = X_test.drop(columns = 'mouse_name')

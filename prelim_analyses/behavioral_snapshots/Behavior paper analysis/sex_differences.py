@@ -47,6 +47,9 @@ allsubjects.loc[(allsubjects['subject_line'] == 'C57BL/6J') |(allsubjects['subje
 allsubjects['training_status'] =np.nan
 allsubjects['days_to_trained'] = np.nan
 allsubjects['trials_to_trained'] = np.nan
+allsubjects['days_to_ephys'] = np.nan
+allsubjects['trials_to_ephys'] = np.nan
+
 
 #Add bias (level2) columns
 allsubjects['average_bias08'] =np.nan
@@ -78,6 +81,7 @@ for labname in users:
                     days_to_trained = sum(behav['date'].unique() < trained_date.to_datetime64())
                     # how many trials to trained?
                     trials_to_trained = sum(behav['date'] < trained_date.to_datetime64())
+                       
                     #average threshold
                     pars = pd.DataFrame((behavior_analysis.BehavioralSummaryByDate.PsychResults * subject.Subject * subject.SubjectLab & \
                                          'subject_nickname="%s"'%mouse & 'lab_name="%s"'%labname).fetch(as_dict=True))
@@ -99,6 +103,13 @@ for labname in users:
                     first_ephystrained_session = subj.aggr(behavior_analysis.SessionTrainingStatus & \
                                                            'training_status="ready for ephys"', first_ephystrained='min(session_start_time)')
                     first_ephystrained_session_time = first_ephystrained_session.fetch1('first_ephystrained')
+                    # trials to ready for ephys
+                    ephys_date = pd.DatetimeIndex([first_ephystrained_session_time])[0]
+                    days_to_ephys = sum((behav['date'].unique() < ephys_date.to_datetime64()) & (behav['date'].unique() > trained_date.to_datetime64()))
+                    trials_to_ephys = sum((behav['date'] < ephys_date.to_datetime64()) & (behav['date'] > trained_date.to_datetime64()))
+                    
+                    #Bias analysis
+                
                     pars = pd.DataFrame((behavior_analysis.BehavioralSummaryByDate.PsychResults * \
                                          subject.Subject * subject.SubjectLab & 'subject_nickname="%s"'%mouse & \
                                          'lab_name="%s"'%labname).fetch(as_dict=True))
@@ -110,10 +121,14 @@ for labname in users:
                 else:
                     average_bias_08 = np.nan
                     average_bias_02= np.nan
+                    days_to_ephys = np.nan
+                    trials_to_ephys= np.nan
                     
                 # keep track
                 allsubjects.loc[allsubjects['subject_nickname'] == mouse, ['days_to_trained']] = days_to_trained
                 allsubjects.loc[allsubjects['subject_nickname'] == mouse, ['trials_to_trained']] = trials_to_trained
+                allsubjects.loc[allsubjects['subject_nickname'] == mouse, ['days_to_ephys']] = days_to_ephys
+                allsubjects.loc[allsubjects['subject_nickname'] == mouse, ['trials_to_ephys']] = trials_to_ephys
                 allsubjects.loc[allsubjects['subject_nickname'] == mouse, ['training_status']] = training_status
                 allsubjects.loc[allsubjects['subject_nickname'] == mouse, ['average_threshold']] = average_threshold
                 allsubjects.loc[allsubjects['subject_nickname'] == mouse, ['average_lapse_high']] = average_lapse_high
@@ -139,7 +154,23 @@ total_day = plt.figure(figsize=(10,6))
 sns.boxplot(x="sex", y="days_to_trained", data=allsubjects )
 sns.swarmplot(x="sex", y="days_to_trained", data=allsubjects,hue="lab_name", edgecolor="white")
 
-#Per Lab - day
+#Per Lab - day ephys
+
+figephys = plt.figure(figsize=(10,20))
+figephys.add_subplot(211)
+sns.boxplot(x="lab_name", y="days_to_ephys", hue="sex",
+            data=allsubjects)
+plt.xticks(rotation=90)
+plt.ylabel('sessions from trained to ephys (sessions)')
+plt.xlabel('')
+figephys.add_subplot(212)
+sns.boxplot(x="lab_name", y="trials_to_ephys", hue="sex",
+            data=allsubjects)
+plt.xticks(rotation=90)
+plt.ylabel('trials from trained to ephys (trials)')
+
+
+#Per Lab - day trained
 lab_day = plt.figure(figsize=(10,6))
 sns.boxplot(x="lab_name", y="days_to_trained", hue="sex",
             data=allsubjects)
@@ -154,7 +185,9 @@ total_trial = plt.figure(figsize=(10,6))
 sns.boxplot(x="sex", y="trials_to_trained", data=allsubjects )
 sns.swarmplot(x="sex", y="trials_to_trained", data=allsubjects,hue="lab_name", edgecolor="white")
 
-#Per Lab - trial
+
+
+#Per Lab - trial trained 
 lab_trial = plt.figure(figsize=(10,6))
 sns.boxplot(x="lab_name", y="trials_to_trained", hue="sex",
             data=allsubjects)
@@ -215,6 +248,7 @@ plt.tight_layout()
 
 
 ##Save figs
+figephys.savefig("trained2ephys.pdf", bbox_inches='tight')
 total_day.savefig("total_day.pdf", bbox_inches='tight')
 lab_day.savefig("lab_day.pdf", bbox_inches='tight')
 interaction_day.savefig("interaction_day.pdf", bbox_inches='tight')
